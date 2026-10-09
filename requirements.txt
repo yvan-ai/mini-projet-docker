@@ -1,0 +1,10 @@
+# Versions figées avec == (résolues le 2026-10-09) : deux builds donnent la même image.
+# Framework web (tire Starlette et Pydantic)
+fastapi==0.143.0
+# Serveur ASGI SANS l'extra [standard] (pas d'uvloop ni d'httptools) : empreinte mémoire minimale
+uvicorn==0.54.0
+# Pilote PostgreSQL. L'extra [binary] installe une wheel qui embarque libpq précompilée :
+# aucun paquet système (gcc, libpq-dev) n'est nécessaire dans l'image.
+psycopg[binary]==3.3.6
+# Pool de connexions partagé par les requêtes (1 à 4 connexions)
+psycopg-pool==3.3.3
