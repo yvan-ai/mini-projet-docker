@@ -1,0 +1,33 @@
+# Le contexte de build est la racine du dépôt. Seuls requirements.txt et src/ sont utiles à l'image :
+# tout le reste est exclu, ce qui réduit le contexte envoyé au moteur et évite d'invalider le cache.
+
+# Contrôle de version et secrets : jamais dans le contexte de build (ni donc dans l'image)
+.git
+.gitignore
+.gitattributes
+.env
+.env.*
+
+# Fichiers Docker / Compose : inutiles dans l'image
+Dockerfile
+.dockerignore
+compose.yaml
+
+# Configs des autres services, docs, scripts : pas utilisés par l'image app
+nginx/
+db/
+scripts/
+docs/
+*.md
+
+# Artefacts Python et environnements locaux
+**/__pycache__
+**/*.py[cod]
+.venv/
+venv/
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
