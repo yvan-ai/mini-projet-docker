@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1.27.1
-# Ligne ci-dessus : version du frontend BuildKit qui lit ce fichier, figée elle aussi
-# (même parseur sur toutes les machines, indépendamment de la version du moteur Docker).
+# Pas de directive "# syntax=" : on utilise le parseur Dockerfile intégré au moteur (BuildKit).
+# Le frontend externe docker/dockerfile tournait dans un conteneur à part qui plantait par
+# intermittence sur ma machine (docs/JOURNAL.md) ; aucune instruction utilisée ici ne l'exige.
 
 # Image officielle, tag figé : version Python complète + variante slim + Debian nommée (trixie = 13).
 # slim : glibc (compatible avec les wheels binaires de PyPI) sans compilateurs ni en-têtes
