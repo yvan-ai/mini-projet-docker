@@ -54,7 +54,7 @@
     .info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
     .info small { display: block; color: var(--muted); }
     li.is-done .title { text-decoration: line-through; color: var(--muted); }
-    .empty { color: var(--muted); text-align: center; padding: 24px 0; }
+    li.empty { justify-content: center; color: var(--muted); padding: 24px 0; }
   </style>
 </head>
 <body>
@@ -178,13 +178,17 @@
     }
   }
 
-  document.getElementById("add-form").addEventListener("submit", (event) => {
+  document.getElementById("add-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const input = document.getElementById("title");
-    run(async () => {
+    // Champ désactivé pendant l'envoi : évite un double envoi ou une saisie mélangée.
+    input.disabled = true;
+    await run(async () => {
       await api("POST", "/api/tasks", { title: input.value });
       input.value = "";
     });
+    input.disabled = false;
+    input.focus();
   });
 
   document.querySelectorAll(".filters button").forEach((btn) => {
