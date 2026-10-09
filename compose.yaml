@@ -1,0 +1,99 @@
+# Orchestration des 3 services : proxy (Nginx) -> app (FastAPI) -> db (PostgreSQL).
+# Pas de clé "version:" : obsolète avec Compose v2 (le format suit la Compose Specification).
+# Les ${VAR} sont lues dans le fichier .env placé à côté de ce fichier (non versionné).
+
+# Nom du projet Compose : préfixe des conteneurs, réseaux et volumes (ex. todo-docker_pgdata).
+name: todo-docker
+
+services:
+  proxy:
+    image: nginx:1.30.5-alpine3.24          # officielle, tag figé (branche stable 1.30, Alpine 3.24)
+    ports:
+      - "${HTTP_PORT:-8080}:80"             # SEUL port publié sur l'hôte (8080 si HTTP_PORT absent)
+    volumes:
+      # Notre config remplace celle de l'image ; :ro = le conteneur ne peut pas la modifier
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy          # n'accepte du trafic qu'une fois l'app prête
+    networks: [front]                       # ne voit QUE l'app, pas la base
+    healthcheck:
+      # wget (busybox) est présent dans l'image alpine ; on interroge le proxy depuis l'intérieur
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 10s
+      # timeout large : sur ma machine chargée, un simple "docker exec" a pris jusqu'à 9,8 s
+      # (docs/JOURNAL.md) ; avec 3 s, les healthchecks échouaient alors que le service répondait.
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped                 # redémarre après un crash ou un reboot, sauf arrêt manuel
+    mem_limit: 32m                          # plafond mémoire (1 worker Nginx consomme quelques Mio)
+
+  app:
+    build:
+      context: .                            # contexte = racine du dépôt, filtré par .dockerignore
+      dockerfile: Dockerfile
+    image: todo-app:1.0.0                   # nom/tag de l'image construite (versionnée)
+    environment:
+      DB_HOST: db                           # nom du service, jamais localhost ni IP (fixé ici, pas dans .env)
+      DB_PORT: "5432"                       # port INTERNE de PostgreSQL sur le réseau back
+      # ${VAR:?message} : compose refuse de démarrer, avec ce message, si la variable manque dans .env
+      DB_NAME: ${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
+      DB_USER: ${POSTGRES_USER:?POSTGRES_USER manquant dans .env}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+    depends_on:
+      db:
+        condition: service_healthy          # attend que PostgreSQL accepte les connexions, pas juste qu'il soit lancé
+    networks: [front, back]                 # parle au proxy (front) et à la base (back)
+    # Pas de clé ports : l'app n'est joignable que via le proxy (EXPOSE 8000 du Dockerfile suffit en interne)
+    healthcheck:
+      # Pas de curl dans l'image slim : on utilise Python, déjà présent.
+      # /health renvoie 200 seulement si la base répond ; 503 ou erreur => code de sortie non nul.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"]
+      interval: 10s
+      timeout: 10s                          # voir le commentaire du healthcheck de proxy
+      retries: 5
+      start_period: 10s                     # échecs ignorés pendant le démarrage
+    restart: unless-stopped
+    mem_limit: 128m                         # 1 worker uvicorn + pool de 4 connexions max
+
+  db:
+    image: postgres:17.11-alpine3.24        # officielle, tag figé, majeure 17 (voir chemin du volume)
+    environment:
+      # Lues par l'entrypoint au 1er démarrage seulement : création de l'utilisateur et de la base
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER manquant dans .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+    # Réglages basse mémoire, passés en arguments au serveur (équivalent de postgresql.conf)
+    command:
+      - postgres
+      - -c
+      - shared_buffers=32MB                 # cache partagé (128MB par défaut)
+      - -c
+      - max_connections=20                  # 100 par défaut ; l'app en ouvre 4 au plus
+      - -c
+      - work_mem=2MB                        # mémoire par tri / hachage
+      - -c
+      - maintenance_work_mem=16MB           # mémoire pour VACUUM, CREATE INDEX
+    volumes:
+      - pgdata:/var/lib/postgresql/data              # volume NOMMÉ = persistance (PGDATA de PostgreSQL 17)
+      - ./db/init:/docker-entrypoint-initdb.d:ro     # schéma, joué au 1er démarrage seulement (volume vide)
+    networks: [back]                                  # pas de clé ports : injoignable depuis l'hôte
+    healthcheck:
+      # -h 127.0.0.1 : force le test en TCP. Pendant l'initialisation, le serveur temporaire
+      # n'écoute que sur le socket Unix ; on évite ainsi un "ready" prématuré.
+      # $$ : échappe l'interpolation Compose, la variable est lue DANS le conteneur au moment du test.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 10s                          # voir le commentaire du healthcheck de proxy
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    mem_limit: 256m
+
+networks:
+  front: {}                 # réseau bridge défini par l'utilisateur : DNS interne (résolution par nom)
+  back:
+    internal: true          # réseau sans accès extérieur : la base est isolée
+
+volumes:
+  pgdata: {}                # géré par Docker, survit à "docker compose down" (supprimé par down -v)
