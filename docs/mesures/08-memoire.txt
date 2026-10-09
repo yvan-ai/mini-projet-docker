@@ -1,0 +1,8 @@
+# Mémoire des 3 conteneurs au repos, 30 s après docker compose up -d --wait
+# Mesuré le 2026-10-09 18:38:13 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+$ docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}"
+NAME                  MEM USAGE / LIMIT   CPU %
+todo-docker-app-1     62.54MiB / 128MiB   0.37%
+todo-docker-db-1      13.74MiB / 256MiB   0.00%
+todo-docker-proxy-1   2.191MiB / 32MiB    0.00%

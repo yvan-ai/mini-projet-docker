@@ -1,0 +1,61 @@
+# Rebuild après ajout de la ligne '# mesure cache 1791563565' à la fin de src/app/main.py (fichier restauré ensuite)
+# Mesuré le 2026-10-09 18:32:45 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+$ time docker compose --progress=plain build app
+ Image todo-app:1.0.0 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 580B 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.59kB 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.13.16-slim-trixie
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 727B 0.1s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 2.58kB 0.0s done
+#5 DONE 0.1s
+
+#6 [1/6] FROM docker.io/library/python:3.13.16-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
+#6 resolve docker.io/library/python:3.13.16-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f 0.1s done
+#6 DONE 0.1s
+
+#7 [2/6] WORKDIR /app
+#7 CACHED
+
+#8 [3/6] RUN groupadd --system app && useradd --system --gid app --no-create-home app
+#8 CACHED
+
+#9 [4/6] COPY requirements.txt .
+#9 CACHED
+
+#10 [5/6] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [6/6] COPY src/ .
+#11 DONE 0.2s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 0.2s done
+#12 exporting manifest sha256:6965b6f9abe5e792d0a09a11afa157062d2eed0c9a04e29790b1ad0dda403ae2
+#12 exporting manifest sha256:6965b6f9abe5e792d0a09a11afa157062d2eed0c9a04e29790b1ad0dda403ae2 0.1s done
+#12 exporting config sha256:acbacd303e8274cf5bd81dfaa601d10b6ab1a4b13f11f40068eb156d51138e0d 0.1s done
+#12 exporting attestation manifest sha256:58eb1f9315bea142763df792d85aad57422bbdeb946a0ccf0a0eeb06844fbade 0.1s done
+#12 exporting manifest list sha256:219ad8f2777f9a4e48106fdd3c928234c6a31c015b4221d68d2642609e4b99bf
+#12 exporting manifest list sha256:219ad8f2777f9a4e48106fdd3c928234c6a31c015b4221d68d2642609e4b99bf 0.1s done
+#12 naming to docker.io/library/todo-app:1.0.0 done
+#12 unpacking to docker.io/library/todo-app:1.0.0
+#12 unpacking to docker.io/library/todo-app:1.0.0 0.5s done
+#12 DONE 1.2s
+
+#13 resolving provenance for metadata file
+#13 DONE 0.1s
+ Image todo-app:1.0.0 Built 
+durée réelle : 9.227 s

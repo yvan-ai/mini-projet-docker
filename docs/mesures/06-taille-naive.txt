@@ -1,0 +1,69 @@
+# Build de la variante naïve docs/Dockerfile.naive, tag todo-app:naive
+# Mesuré le 2026-10-09 18:35:36 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+$ time docker build --progress=plain -f docs/Dockerfile.naive -t todo-app:naive .
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.naive
+#1 transferring dockerfile:
+#1 transferring dockerfile: 664B 0.2s done
+#1 DONE 0.5s
+
+#2 [internal] load metadata for docker.io/library/python:3.13.16-trixie
+#2 DONE 0.6s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 727B 0.0s done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 DONE 0.0s
+
+#5 [1/4] FROM docker.io/library/python:3.13.16-trixie@sha256:71d866ed79158f6ff25b096687f90ca706684937ea2032b86e479a060d9eaa7d
+#5 resolve docker.io/library/python:3.13.16-trixie@sha256:71d866ed79158f6ff25b096687f90ca706684937ea2032b86e479a060d9eaa7d 0.1s done
+#5 DONE 0.1s
+
+#4 [internal] load build context
+#4 transferring context: 311B done
+#4 DONE 0.0s
+
+#6 [2/4] WORKDIR /app
+#6 CACHED
+
+#7 [3/4] COPY . .
+#7 CACHED
+
+#8 [4/4] RUN pip install -r requirements.txt
+#8 CACHED
+
+#9 exporting to image
+#9 exporting layers done
+#9 exporting manifest sha256:104e036aa6cb3e84c55a16f9b4f74d9d493eb2ae5fa30b153d345dd0f1606a59 0.0s done
+#9 exporting config sha256:0c697da77f065d4b155303863cebf9fd461e291796b9b302064f7305e53af4af
+#9 exporting config sha256:0c697da77f065d4b155303863cebf9fd461e291796b9b302064f7305e53af4af 0.0s done
+#9 exporting attestation manifest sha256:2da730ff64c58de33d4a621524dd1245b4a4355a94c6b907426ddf3d53d5a69a 0.1s done
+#9 exporting manifest list sha256:e8da9c77c4e2430d1fbfcff7f30af797b9b51d297430a54189dab0e368e4d558
+#9 exporting manifest list sha256:e8da9c77c4e2430d1fbfcff7f30af797b9b51d297430a54189dab0e368e4d558 0.1s done
+#9 naming to docker.io/library/todo-app:naive done
+#9 unpacking to docker.io/library/todo-app:naive
+#9 unpacking to docker.io/library/todo-app:naive 15.9s done
+#9 DONE 16.5s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/mlsje57e52h7nfz6u7h9lmazz
+durée réelle : 22.741 s
+
+$ docker image ls todo-app
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE            ID             DISK USAGE   CONTENT SIZE   EXTRA
+todo-app:1.0.0   f5ab0bf4bdab        229MB         54.5MB        
+todo-app:naive   e8da9c77c4e2        1.7GB          440MB        
+
+$ docker image inspect -f '{{.Size}}' todo-app:naive   (octets, contenu compressé)
+439937607
+
+$ docker rmi todo-app:naive
+Untagged: todo-app:naive
+Deleted: sha256:e8da9c77c4e2430d1fbfcff7f30af797b9b51d297430a54189dab0e368e4d558
+$ docker rmi python:3.13.16-trixie   (téléchargée uniquement pour cette mesure)
+Untagged: python:3.13.16-trixie
+Deleted: sha256:71d866ed79158f6ff25b096687f90ca706684937ea2032b86e479a060d9eaa7d

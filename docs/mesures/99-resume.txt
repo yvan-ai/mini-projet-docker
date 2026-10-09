@@ -1,0 +1,15 @@
+# Résumé des mesures
+# Mesuré le 2026-10-09 18:47:57 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+Image finale todo-app:1.0.0   : 229MB
+Image naïve todo-app:naive    : 1.7GB
+Gain                          : 1471.0 Mo, soit 87 %
+Build à froid (01)            : 264.109 s
+Build sans changement (02)    : 9.013 s
+Build code modifié (03)       : 9.227 s
+Build requirements modifié (04): 129.258 s
+Mémoire des services (08) :
+NAME                  MEM USAGE / LIMIT   CPU %
+todo-docker-app-1     62.54MiB / 128MiB   0.37%
+todo-docker-db-1      13.74MiB / 256MiB   0.00%
+todo-docker-proxy-1   2.191MiB / 32MiB    0.00%

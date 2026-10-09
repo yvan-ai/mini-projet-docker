@@ -1,0 +1,121 @@
+# Persistance : une tâche créée survit à restart, puis à down suivi de up
+# Mesuré le 2026-10-09 18:38:18 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+## 1. Création de la tâche mesure-persistance-1791563898
+$ curl -s -X POST http://localhost:8080/api/tasks -d '{"title":"mesure-persistance-1791563898"}'
+{"id":7,"title":"mesure-persistance-1791563898","done":false,"created_at":"2026-10-09T16:38:20.942760Z","done_at":null}
+$ docker compose ps --format '{{.Name}} {{.ID}} {{.RunningFor}}'
+todo-docker-app-1 5ffae0694fc8 2 minutes ago
+todo-docker-db-1 8b804787434c 38 minutes ago
+todo-docker-proxy-1 d70773f35fc1 38 minutes ago
+$ curl -s http://localhost:8080/api/tasks
+[{"id":7,"title":"mesure-persistance-1791563898","done":false,"created_at":"2026-10-09T16:38:20.942760Z","done_at":null},{"id":5,"title":"smoke-1791560673","done":true,"created_at":"2026-10-09T15:44:35.967453Z","done_at":"2026-10-09T15:44:37.188142Z"},{"id":4,"title":"smoke-1791556670","done":true,"created_at":"2026-10-09T14:37:50.700112Z","done_at":"2026-10-09T14:37:55.213547Z"}]
+
+## 2. docker compose restart : mêmes conteneurs (mêmes ID) redémarrés
+$ time docker compose restart
+ Container todo-docker-db-1 Restarting 
+ Container todo-docker-app-1 Restarting 
+ Container todo-docker-proxy-1 Restarting 
+ Container todo-docker-db-1 Started 
+ Container todo-docker-app-1 Started 
+ Container todo-docker-proxy-1 Started 
+durée réelle : 88.078 s
+ Container todo-docker-db-1 Running 
+ Container todo-docker-app-1 Running 
+ Container todo-docker-proxy-1 Running 
+ Container todo-docker-db-1 Waiting 
+ Container todo-docker-db-1 Healthy 
+ Container todo-docker-app-1 Waiting 
+ Container todo-docker-app-1 Healthy 
+ Container todo-docker-proxy-1 Waiting 
+ Container todo-docker-app-1 Waiting 
+ Container todo-docker-db-1 Waiting 
+ Container todo-docker-proxy-1 Healthy 
+ Container todo-docker-db-1 Healthy 
+ Container todo-docker-app-1 Healthy 
+$ docker compose ps --format '{{.Name}} {{.ID}} {{.RunningFor}}'
+todo-docker-app-1 5ffae0694fc8 3 minutes ago
+todo-docker-db-1 8b804787434c 40 minutes ago
+todo-docker-proxy-1 d70773f35fc1 39 minutes ago
+$ curl -s http://localhost:8080/api/tasks
+[{"id":7,"title":"mesure-persistance-1791563898","done":false,"created_at":"2026-10-09T16:38:20.942760Z","done_at":null},{"id":5,"title":"smoke-1791560673","done":true,"created_at":"2026-10-09T15:44:35.967453Z","done_at":"2026-10-09T15:44:37.188142Z"},{"id":4,"title":"smoke-1791556670","done":true,"created_at":"2026-10-09T14:37:50.700112Z","done_at":"2026-10-09T14:37:55.213547Z"}]
+
+## 3. docker compose down puis up : conteneurs et réseaux supprimés puis recréés (nouveaux ID)
+$ time docker compose down
+ Container todo-docker-proxy-1 Stopping 
+ Container todo-docker-proxy-1 Stopped 
+ Container todo-docker-proxy-1 Removing 
+ Container todo-docker-proxy-1 Removed 
+ Container todo-docker-app-1 Stopping 
+ Container todo-docker-app-1 Stopped 
+ Container todo-docker-app-1 Removing 
+ Container todo-docker-app-1 Removed 
+ Container todo-docker-db-1 Stopping 
+ Container todo-docker-db-1 Stopped 
+ Container todo-docker-db-1 Removing 
+ Container todo-docker-db-1 Removed 
+ Network todo-docker_back Removing 
+ Network todo-docker_front Removing 
+ Network todo-docker_back Removed 
+ Network todo-docker_front Removed 
+durée réelle : 12.228 s
+$ docker volume ls --filter name=todo-docker
+DRIVER    VOLUME NAME
+local     todo-docker_pgdata
+$ time docker compose up -d --wait
+ Network todo-docker_back Creating 
+ Network todo-docker_back Created 
+ Network todo-docker_front Creating 
+ Network todo-docker_front Created 
+ Container todo-docker-db-1 Creating 
+ Container todo-docker-db-1 Created 
+ Container todo-docker-app-1 Creating 
+ Container todo-docker-app-1 Created 
+ Container todo-docker-proxy-1 Creating 
+ Container todo-docker-proxy-1 Created 
+ Container todo-docker-db-1 Starting 
+ Container todo-docker-db-1 Started 
+ Container todo-docker-db-1 Waiting 
+ Container todo-docker-db-1 Healthy 
+ Container todo-docker-app-1 Starting 
+ Container todo-docker-app-1 Started 
+ Container todo-docker-app-1 Waiting 
+ Container todo-docker-app-1 Healthy 
+ Container todo-docker-proxy-1 Starting 
+ Container todo-docker-proxy-1 Started 
+ Container todo-docker-app-1 Waiting 
+ Container todo-docker-db-1 Waiting 
+ Container todo-docker-proxy-1 Waiting 
+ Container todo-docker-db-1 Healthy 
+ Container todo-docker-app-1 Healthy 
+ Container todo-docker-proxy-1 Healthy 
+durée réelle : 135.012 s
+$ docker compose ps --format '{{.Name}} {{.ID}} {{.RunningFor}}'
+todo-docker-app-1 53f14edc12ec About a minute ago
+todo-docker-db-1 290bd1bd1429 About a minute ago
+todo-docker-proxy-1 01845ea7de21 About a minute ago
+$ curl -s http://localhost:8080/api/tasks
+[{"id":7,"title":"mesure-persistance-1791563898","done":false,"created_at":"2026-10-09T16:38:20.942760Z","done_at":null},{"id":5,"title":"smoke-1791560673","done":true,"created_at":"2026-10-09T15:44:35.967453Z","done_at":"2026-10-09T15:44:37.188142Z"},{"id":4,"title":"smoke-1791556670","done":true,"created_at":"2026-10-09T14:37:50.700112Z","done_at":"2026-10-09T14:37:55.213547Z"}]
+
+## 4. Logs du nouveau conteneur db : le script d'init n'est pas rejoué
+$ docker compose logs db | grep -E "Skipping initialization|docker-entrypoint-initdb.d|ready to accept"
+db-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+db-1  | 2026-10-09 16:41:09.164 UTC [1] LOG:  database system is ready to accept connections
+
+$ docker volume inspect todo-docker_pgdata
+[
+    {
+        "CreatedAt": "2026-10-09T14:21:03Z",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.compose.config-hash": "8edce8f92afe905971cbdffa2e9a247f0cbdcea1e5cfef704306a7dd43d428f4",
+            "com.docker.compose.project": "todo-docker",
+            "com.docker.compose.version": "5.1.1",
+            "com.docker.compose.volume": "pgdata"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/todo-docker_pgdata/_data",
+        "Name": "todo-docker_pgdata",
+        "Options": null,
+        "Scope": "local"
+    }
+]

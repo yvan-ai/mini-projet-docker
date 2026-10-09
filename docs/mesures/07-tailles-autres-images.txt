@@ -1,0 +1,23 @@
+# Tailles des images officielles utilisées (proxy, db) et des bases Python slim / complète
+# Mesuré le 2026-10-09 18:36:05 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+$ docker image ls nginx:1.30.5-alpine3.24
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE                     ID             DISK USAGE   CONTENT SIZE   EXTRA
+nginx:1.30.5-alpine3.24   0985e772fb9f       93.6MB           27MB   U    
+
+$ docker image ls postgres:17.11-alpine3.24
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE                       ID             DISK USAGE   CONTENT SIZE   EXTRA
+postgres:17.11-alpine3.24   b0f9560a2de0        424MB          118MB   U    
+
+$ docker image ls python:3.13.16-slim-trixie
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE                        ID             DISK USAGE   CONTENT SIZE   EXTRA
+python:3.13.16-slim-trixie   70729b46c69b        178MB         45.3MB        
+
+$ docker image ls python:3.13.16-trixie
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE                   ID             DISK USAGE   CONTENT SIZE   EXTRA
+python:3.13.16-trixie   71d866ed7915       1.62GB          431MB        
+

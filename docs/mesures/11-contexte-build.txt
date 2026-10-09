@@ -1,0 +1,29 @@
+# Contexte de build envoyé au moteur, filtré par .dockerignore
+# Mesuré le 2026-10-09 18:44:54 +0200 ; MINGW64_NT-10.0-22621 3.3.6-341.x86_64 x86_64, Docker Engine 29.3.1
+
+## Lignes 'transferring context' des builds 01 à 04
+## (BuildKit ne retransfère que les fichiers modifiés depuis le build précédent)
+docs/mesures/01-build-froid.txt:#4 transferring context: 727B 0.0s done
+docs/mesures/01-build-froid.txt:#5 transferring context: 3.10kB 0.0s done
+docs/mesures/02-build-cache.txt:#4 transferring context: 727B 0.0s done
+docs/mesures/02-build-cache.txt:#5 transferring context: 311B 0.0s done
+docs/mesures/03-build-code-modifie.txt:#4 transferring context: 727B 0.1s done
+docs/mesures/03-build-code-modifie.txt:#5 transferring context: 2.58kB 0.0s done
+docs/mesures/04-build-requirements-modifie.txt:#4 transferring context: 727B done
+docs/mesures/04-build-requirements-modifie.txt:#5 transferring context: 3.13kB 0.0s done
+
+## Fichiers réellement inclus dans le contexte (requirements.txt et src/, le reste est exclu)
+$ find requirements.txt src -type f ! -path '*__pycache__*' -exec wc -c {} +
+  544 requirements.txt
+ 3409 src/app/db.py
+ 2227 src/app/main.py
+  536 src/app/schemas.py
+ 7819 src/app/static/index.html
+   82 src/app/__init__.py
+14617 total
+
+## Pour comparaison, taille du dépôt sans .dockerignore (avec puis sans .git)
+$ du -sh .
+410K	.
+$ du -sh --exclude=.git .
+199K	.
