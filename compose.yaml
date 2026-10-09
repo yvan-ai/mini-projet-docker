@@ -54,6 +54,7 @@ services:
       retries: 5
       start_period: 10s                     # échecs ignorés pendant le démarrage
     restart: unless-stopped
+    stop_grace_period: 10s                  # temps laissé à uvicorn après SIGTERM (voir db)
     mem_limit: 128m                         # 1 worker uvicorn + pool de 4 connexions max
 
   db:
@@ -88,6 +89,10 @@ services:
       retries: 10
       start_period: 10s
     restart: unless-stopped
+    # Délai entre le signal d'arrêt (SIGINT pour cette image : "fast shutdown") et le SIGKILL.
+    # Explicite car le moteur de ma machine n'accorde qu'1 s par défaut (docs/JOURNAL.md) :
+    # PostgreSQL doit avoir le temps d'écrire son checkpoint d'arrêt.
+    stop_grace_period: 10s
     mem_limit: 256m
 
 networks:
