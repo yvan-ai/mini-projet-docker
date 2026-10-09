@@ -31,7 +31,7 @@ Sous Windows, lancer les commandes depuis un terminal WSL2 (dépôt cloné dans 
 ## Démarrage
 
 ```bash
-git clone <url-du-depot> mini-projet-docker
+git clone https://github.com/yvan-ai/mini-projet-docker.git mini-projet-docker
 cd mini-projet-docker
 cp .env.example .env
 docker compose up -d --build --wait
