@@ -87,7 +87,7 @@ docker compose down -v            # tout arrêter ET supprimer les données
 
 Le script démarre la stack, vérifie les routes, la création et la validation des tâches, la persistance après `restart` puis après `down` / `up`, que la base et l'app ne sont pas publiées, la résolution de `db` par son nom et l'isolation du réseau de la base. Il affiche `OK` ou `ECHEC` à chaque étape et supprime sa tâche de test. L'option `--destructive` ajoute un test `down -v` qui efface les données.
 
-`./scripts/mesures.sh` régénère les mesures de `docs/mesures/` utilisées dans `RAPPORT.md`.
+`./scripts/mesures.sh` régénère les mesures de `docs/mesures/` utilisées dans `RAPPORT.docx`.
 
 ## Dépannage
 
