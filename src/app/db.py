@@ -1,4 +1,3 @@
-"""Accès à PostgreSQL : configuration lue dans l'environnement, pool de connexions, requêtes SQL."""
 import os
 
 import psycopg
@@ -8,20 +7,16 @@ from psycopg_pool import ConnectionPool
 
 
 def _required(name: str) -> str:
-    # Variable obligatoire : on échoue au démarrage avec un message clair plutôt que de deviner.
     value = os.environ.get(name, "").strip()
     if not value:
         raise RuntimeError(f"{name} manquant")
     return value
 
 
-# Nom d'hôte de la base, fourni par compose.yaml (nom du service "db").
-# Volontairement SANS valeur par défaut : jamais d'adresse IP ni d'hôte local codé en dur.
+# Pas de valeur par défaut : l'hôte de la base vient de compose (nom du service "db")
 DB_HOST = _required("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT", "5432")
 
-# make_conninfo construit la chaîne "host=... password=..." en échappant les valeurs
-# (un mot de passe contenant des espaces ou des quotes ne casse pas la connexion).
 _conninfo = make_conninfo(
     host=DB_HOST,
     port=DB_PORT,
@@ -30,10 +25,6 @@ _conninfo = make_conninfo(
     password=_required("DB_PASSWORD"),
 )
 
-# Pool réduit (1 à 4 connexions) : peu de mémoire côté app et côté PostgreSQL (max_connections=20).
-# open=False : le pool est ouvert au démarrage de l'app (lifespan), pas à l'import du module.
-# check : vérifie chaque connexion avant de la prêter (survit à un redémarrage de la base).
-# dict_row : chaque ligne devient un dict, directement sérialisable en JSON.
 pool = ConnectionPool(
     _conninfo,
     min_size=1,
@@ -43,11 +34,7 @@ pool = ConnectionPool(
     kwargs={"row_factory": dict_row},
 )
 
-# Filtre de statut -> valeur de la colonne done (None = pas de filtre)
 _STATUS_FILTER = {"all": None, "todo": False, "done": True}
-
-# Toutes les requêtes sont paramétrées (%s) : les valeurs sont envoyées séparément du SQL,
-# aucune injection SQL possible. "with pool.connection()" valide la transaction en sortie.
 
 
 def list_tasks(status: str) -> list[dict]:
@@ -68,7 +55,6 @@ def create_task(title: str) -> dict:
 
 
 def mark_done(task_id: int) -> dict | None:
-    # Idempotent : COALESCE conserve la date de la première réalisation.
     with pool.connection() as conn:
         return conn.execute(
             "UPDATE tasks SET done = TRUE, done_at = COALESCE(done_at, now()) "
@@ -83,7 +69,6 @@ def delete_task(task_id: int) -> bool:
 
 
 def db_ping() -> bool:
-    # Utilisé par /health : la base répond-elle à SELECT 1 en moins de 2 s ?
     try:
         with pool.connection(timeout=2) as conn:
             conn.execute("SELECT 1")

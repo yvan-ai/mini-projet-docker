@@ -1,6 +1,4 @@
-# Fins de ligne LF partout : un script ou un SQL en CRLF peut casser son exécution dans un conteneur Linux
 * text=auto eol=lf
 *.sh text eol=lf
 *.sql text eol=lf
-# Fichiers binaires : jamais de conversion de fin de ligne
 *.docx binary

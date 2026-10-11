@@ -1,13 +1,10 @@
-# Secrets locaux : ne jamais commiter
 .env
 
-# Python
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 
-# Éditeurs / OS
 .vscode/
 .idea/
 .DS_Store

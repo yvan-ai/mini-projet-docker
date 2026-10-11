@@ -1,7 +1,4 @@
-# Variante "avant optimisation", conservée uniquement pour la mesure de taille (RAPPORT, question 3).
-# Jamais utilisée par compose.yaml. Buildée par scripts/mesures.sh sous le tag todo-app:naive, mesurée, puis supprimée.
-# Défauts volontaires : image Python complète (compilateurs, en-têtes), code copié AVANT les dépendances
-# (toute modification du code relance pip install), cache pip conservé dans l'image, exécution en root.
+# Variante "avant optimisation", jamais utilisée par compose.yaml : sert uniquement à la mesure de taille du rapport.
 FROM python:3.13.16-trixie
 WORKDIR /app
 COPY . .

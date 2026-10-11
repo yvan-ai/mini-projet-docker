@@ -3,14 +3,10 @@
 # Usage : ./scripts/mesures.sh [--destructive] [--compare-third-service]
 #   --destructive           : ajoute la mesure "docker compose down -v" (SUPPRIME les données de la base)
 #   --compare-third-service : lance temporairement adminer et redis pour comparer leur mémoire à Nginx
-# Ne lance jamais docker system prune ni docker builder prune (effets sur les autres projets).
-# Les fichiers modifiés pour les mesures de cache sont restaurés quoi qu'il arrive (trap EXIT).
 set -euo pipefail
 
-# Toujours travailler depuis la racine du dépôt
 cd "$(dirname "$0")/.."
 
-# Git Bash (Windows) réécrit les arguments qui ressemblent à des chemins Unix : on désactive.
 export MSYS_NO_PATHCONV=1
 
 DESTRUCTIVE=0
@@ -30,12 +26,10 @@ HTTP_PORT=$(grep -E '^HTTP_PORT=' .env | cut -d= -f2 | tr -d '\r' || true)
 BASE="http://localhost:${HTTP_PORT:-8080}"
 MACHINE="$(uname -srm), Docker Engine $(docker version --format '{{.Server.Version}}')"
 
-# Images de comparaison (option --compare-third-service) et base de la variante naïve, tags figés
 NAIVE_BASE=python:3.13.16-trixie
 ADMINER=adminer:6.1.1-standalone
 REDIS=redis:8.10.2-alpine3.23
 
-# Sauvegarde des fichiers modifiés pendant les mesures de cache
 BACKUP=$(mktemp -d)
 cp src/app/main.py requirements.txt "$BACKUP/"
 restore() {
@@ -46,11 +40,9 @@ restore() {
 }
 trap restore EXIT
 
-# Format de la commande time de bash : durée lisible, recherchée ensuite par duration()
 TIMEFORMAT='durée réelle : %R s'
 
 header() { echo "# $1"; echo "# Mesuré le $(date '+%Y-%m-%d %H:%M:%S %z') ; $MACHINE"; echo; }
-# timed FICHIER TITRE commande... : sortie complète + durée de la commande dans FICHIER
 timed() {
   local file=$1 title=$2; shift 2
   header "$title" >"$file"
@@ -63,12 +55,10 @@ containers() {
   echo "\$ docker compose ps --format '{{.Name}} {{.ID}} {{.RunningFor}}'"
   docker compose ps --format '{{.Name}} {{.ID}} {{.RunningFor}}'
 }
-# Taille "docker image ls" (ex. 229MB, 1.65GB) convertie en Mo, pour le calcul du gain
 to_mb() { awk -v s="$1" 'BEGIN { n = s + 0; if (s ~ /GB$/) n *= 1000; else if (s ~ /kB$/) n /= 1000; printf "%.1f", n }'; }
 
 echo "Mesures en cours, sorties dans $OUT/ (plusieurs minutes)."
 
-# 01 à 04 : cache de build ---------------------------------------------------------------------
 echo "[01] build à froid (--no-cache)"
 timed "$OUT/01-build-froid.txt" \
   "Build à froid de l'image app : aucune couche réutilisée (image de base python déjà présente localement)" \
@@ -94,10 +84,8 @@ timed "$OUT/04-build-requirements-modifie.txt" \
   docker compose --progress=plain build app
 cp "$BACKUP/requirements.txt" requirements.txt
 
-# L'image doit correspondre aux fichiers restaurés (couches identiques au build 02, donc en cache)
 docker compose build app >/dev/null 2>&1
 
-# 05 à 07 : tailles ----------------------------------------------------------------------------
 echo "[05] taille de l'image finale"
 {
   header "Taille de l'image finale todo-app:1.0.0"
@@ -114,8 +102,6 @@ echo "[05] taille de l'image finale"
 echo "[06] variante naïve (docs/Dockerfile.naive)"
 HAD_NAIVE_BASE=0
 if docker image inspect "$NAIVE_BASE" >/dev/null 2>&1; then HAD_NAIVE_BASE=1; fi
-# Pull explicite : avec le magasin d'images containerd, le build seul ne crée pas d'image nommée
-# pour la base, qu'on veut pourtant mesurer (07) puis supprimer.
 docker pull -q "$NAIVE_BASE" >/dev/null
 timed "$OUT/06-taille-naive.txt" "Build de la variante naïve docs/Dockerfile.naive, tag todo-app:naive" \
   docker build --progress=plain -f docs/Dockerfile.naive -t todo-app:naive .
@@ -140,7 +126,6 @@ echo "[07] tailles des autres images"
   done
 } >"$OUT/07-tailles-autres-images.txt" 2>&1
 
-# Nettoyage : l'image naïve, et sa base si elle a été téléchargée pour l'occasion
 {
   echo
   echo '$ docker rmi todo-app:naive'
@@ -151,7 +136,6 @@ echo "[07] tailles des autres images"
   fi
 } >>"$OUT/06-taille-naive.txt" 2>&1
 
-# 08 : mémoire ---------------------------------------------------------------------------------
 echo "[08] mémoire des conteneurs (30 s après démarrage)"
 docker compose up -d --wait >/dev/null 2>&1
 sleep 30
@@ -161,7 +145,6 @@ sleep 30
   docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}" $(docker compose ps -q)
 } >"$OUT/08-memoire.txt" 2>&1
 
-# 09 : persistance -----------------------------------------------------------------------------
 echo "[09] persistance (restart, down puis up)"
 PTITLE="mesure-persistance-$(date +%s)"
 {
@@ -198,7 +181,6 @@ PTITLE="mesure-persistance-$(date +%s)"
   docker volume inspect todo-docker_pgdata
 } >"$OUT/09-persistance.txt" 2>&1
 
-# 10 : down -v (uniquement avec --destructive) -------------------------------------------------
 if [[ $DESTRUCTIVE -eq 1 ]]; then
   echo "[10] down -v (DESTRUCTIF : les données de la base sont supprimées)"
   {
@@ -226,12 +208,10 @@ if [[ $DESTRUCTIVE -eq 1 ]]; then
     list_tasks
   } >"$OUT/10-down-v.txt" 2>&1
 else
-  # Sans --destructive, on supprime simplement la tâche de mesure
   PID=$(curl -s "$BASE/api/tasks?status=all" | grep -o "\"id\":[0-9]*,\"title\":\"$PTITLE\"" | sed 's/"id":\([0-9]*\).*/\1/' || true)
   if [[ -n "$PID" ]]; then curl -s -o /dev/null -X DELETE "$BASE/api/tasks/$PID"; fi
 fi
 
-# 11 : contexte de build -----------------------------------------------------------------------
 echo "[11] contexte de build"
 {
   header "Contexte de build envoyé au moteur, filtré par .dockerignore"
@@ -250,7 +230,6 @@ echo "[11] contexte de build"
   du -sh --exclude=.git .
 } >"$OUT/11-contexte-build.txt" 2>&1
 
-# 12 : comparaison du 3e service (option) ------------------------------------------------------
 if [[ $COMPARE -eq 1 ]]; then
   echo "[12] comparaison mémoire Nginx / Adminer / Redis"
   PULLED=()
@@ -275,7 +254,6 @@ if [[ $COMPARE -eq 1 ]]; then
   if [[ ${#PULLED[@]} -gt 0 ]]; then docker rmi "${PULLED[@]}" >/dev/null; fi
 fi
 
-# Résumé ---------------------------------------------------------------------------------------
 FINAL_MB=$(to_mb "$FINAL_SIZE")
 NAIVE_MB=$(to_mb "$NAIVE_SIZE")
 GAIN=$(awk -v f="$FINAL_MB" -v n="$NAIVE_MB" 'BEGIN { printf "%.1f Mo, soit %.0f %%", n - f, (n - f) * 100 / n }')

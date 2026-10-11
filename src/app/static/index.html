@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestion de tâches</title>
-  <!-- CSS inline, aucune ressource externe (pas de CDN) : la page fonctionne hors ligne. -->
   <style>
     :root {
       --bg: #f5f6f8; --card: #ffffff; --text: #1d2330; --muted: #6b7385;
@@ -78,7 +77,6 @@
 </main>
 
 <script>
-  // Filtre courant : all | todo | done (même valeur que le paramètre ?status= de l'API)
   let currentStatus = "all";
 
   const listEl = document.getElementById("list");
@@ -90,8 +88,6 @@
     errorEl.classList.toggle("visible", Boolean(message));
   }
 
-  // Appel à l'API. Chemins RELATIFS uniquement (/api/...) : la page parle au même hôte et
-  // au même port que celui qui l'a servie, donc au reverse proxy, quel que soit HTTP_PORT.
   async function api(method, path, body) {
     const options = { method, headers: {} };
     if (body !== undefined) {
@@ -100,12 +96,11 @@
     }
     const res = await fetch(path, options);
     if (!res.ok) {
-      // Message lisible : "detail" de FastAPI (texte ou liste d'erreurs de validation)
       let detail = res.statusText;
       try {
         const data = await res.json();
         detail = typeof data.detail === "string" ? data.detail : data.detail.map(d => d.msg).join(", ");
-      } catch (e) { /* réponse non JSON (ex. 502 du proxy) : on garde statusText */ }
+      } catch {}
       throw new Error(`Erreur ${res.status} : ${detail}`);
     }
     return res.status === 204 ? null : res.json();
@@ -115,8 +110,7 @@
     return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
   }
 
-  // Construit une ligne de la liste. Le titre (donnée saisie par un utilisateur) est inséré
-  // avec textContent, JAMAIS innerHTML : une balise <script> dans un titre reste du texte (anti XSS).
+  // textContent et jamais innerHTML : un titre saisi reste du texte (protection XSS)
   function renderTask(task) {
     const li = document.createElement("li");
     if (task.done) li.classList.add("is-done");
@@ -149,7 +143,6 @@
     return li;
   }
 
-  // Recharge la liste filtrée (via l'API) et le compteur global.
   async function refresh() {
     const [filtered, all] = await Promise.all([
       api("GET", `/api/tasks?status=${currentStatus}`),
@@ -167,7 +160,6 @@
     }
   }
 
-  // Exécute une action puis rafraîchit ; toute erreur est affichée à l'utilisateur.
   async function run(action) {
     try {
       await action();
@@ -181,7 +173,6 @@
   document.getElementById("add-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const input = document.getElementById("title");
-    // Champ désactivé pendant l'envoi : évite un double envoi ou une saisie mélangée.
     input.disabled = true;
     await run(async () => {
       await api("POST", "/api/tasks", { title: input.value });

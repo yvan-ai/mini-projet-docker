@@ -1,4 +1,3 @@
-"""API FastAPI de gestion de tâches et page web statique."""
 import socket
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,10 +14,8 @@ INDEX_HTML = Path(__file__).parent / "static" / "index.html"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Démarrage : ouvre le pool et attend une première connexion à la base (30 s maximum).
     db.pool.open(wait=True, timeout=30)
     yield
-    # Arrêt (SIGTERM envoyé par docker stop) : ferme proprement les connexions.
     db.pool.close()
 
 
@@ -32,7 +29,6 @@ def index():
 
 @app.get("/health")
 def health():
-    # Lu par le healthcheck compose : 503 si la base ne répond pas.
     if db.db_ping():
         return {"status": "ok", "db": "ok"}
     return JSONResponse({"status": "degraded", "db": "ko"}, status_code=503)
@@ -40,7 +36,6 @@ def health():
 
 @app.get("/api/info")
 def info():
-    # Démonstration : l'app joint la base par son NOM de service (db_host vaut "db").
     return {
         "app_hostname": socket.gethostname(),
         "db_host": db.DB_HOST,
@@ -50,7 +45,6 @@ def info():
 
 @app.get("/api/tasks", response_model=list[TaskOut])
 def list_tasks(status: Literal["all", "todo", "done"] = "all"):
-    # Literal : toute autre valeur de status est refusée par FastAPI (422).
     return db.list_tasks(status)
 
 
